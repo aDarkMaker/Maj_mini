@@ -1,5 +1,5 @@
 // 花色
-type Suit = 'w' | 't' | 'b';
+export type Suit = 'w' | 't' | 'b';
 
 // 牌面
 type Tile = { suit: Suit; rank: number };
@@ -19,6 +19,8 @@ export interface PlayerState {
 	hand: TileId[];
 	melds: Meld[];
 	discarded: TileId[];
+	/** 定缺：该门必须打光，胡牌时手牌不能含此花色 */
+	queSuit: Suit | null;
 }
 
 export interface Meld {

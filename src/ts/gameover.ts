@@ -29,6 +29,8 @@ export function isHuaZhu(hand: string[], melds: Meld[]): boolean {
 export function isRoundOver(state: GameState, summary: RoundSummary): boolean {
 	if (summary.winners.length >= 3) return true;
 	if (state.wall.length > 0) return false;
+	const cur = state.players[state.currentPlayer];
+	if (cur && cur.hand.length === 14) return false;
 	const notWon = 4 - summary.winners.length;
 	return notWon >= 2;
 }

@@ -1,11 +1,10 @@
 import _ from 'lodash';
-import type { Meld } from './types';
+import type { Meld, Suit } from './types';
 
 const SUITS = ['w', 't', 'b'] as const;
-type Suit = (typeof SUITS)[number];
 
 /** 花色 */
-function getSuit(tileId: string): Suit | null {
+export function getSuit(tileId: string): Suit | null {
 	if (tileId.length < 2) return null;
 	const s = tileId[0];
 	if (s === 'w' || s === 't' || s === 'b') return s;
@@ -115,22 +114,37 @@ function checkStandard(counts: Map<string, number>): boolean {
 }
 
 /** Win
- * API
- * @param hand 手牌
- * @param melds 碰/杠
- * @param _winningTile 胡牌
- * @param _isSelfDraw 自摸
+ * @param queSuit 定缺：若传入，手牌+副露不能含该花色
  */
-
-export function canWin(hand: string[], melds: Meld[], _winningTile: string, _isSelfDraw: boolean): boolean {
+export function canWin(
+	hand: string[],
+	melds: Meld[],
+	_winningTile: string,
+	_isSelfDraw: boolean,
+	queSuit?: Suit | null
+): boolean {
 	const counts = getTileCounts(hand, melds);
 	if (totalTiles(counts) !== 14) return false;
+	if (queSuit != null) {
+		for (const [tileId, c] of counts)
+			if (c > 0 && getSuit(tileId) === queSuit) return false;
+	}
 	if (!checkQueMen(counts)) return false;
 	return checkStandard(counts) || checkQiDui(counts);
 }
 
+/** 定缺下可打的牌：有缺门牌时只能打缺门，否则可打任意手牌（每种一张为代表） */
+export function getValidDiscards(hand: string[], queSuit: Suit | null): string[] {
+	if (!hand.length) return [];
+	if (queSuit != null) {
+		const ofQue = hand.filter((id) => getSuit(id) === queSuit);
+		if (ofQue.length > 0) return [...new Set(ofQue)];
+	}
+	return [...new Set(hand)];
+}
+
 // Score 计分复用
-export { getSuit, getRank, getTileCounts, totalTiles, checkQiDui };
+export { getRank, getTileCounts, totalTiles, checkQiDui };
 
 export function getSuitSet(counts: Map<string, number>): Set<Suit> {
 	return new Set(_.compact(_.map([...counts.keys()], getSuit)));

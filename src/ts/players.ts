@@ -173,18 +173,19 @@ export function win(state: GameState, who: PlayerIndex, tileId: string, isSelfDr
 	}
 
 	const handWithTile = isSelfDraw ? player.hand : [...player.hand, tileId];
-	if (!canWin(handWithTile, player.melds, tileId, isSelfDraw)) return err('Not a winning hand');
+	if (!canWin(handWithTile, player.melds, tileId, isSelfDraw, player.queSuit)) return err('Not a winning hand');
 
+	const nextDrawPlayer = isSelfDraw ? ((who + 1) % 4) : ((state.lastDiscardFrom ?? who) + 1) % 4;
 	const next = produce(state, (draft: Draft<GameState>) => {
 		draft.lastDiscarded = null;
 		draft.lastDiscardFrom = null;
-		draft.currentPlayer = ((who + 1) % 4) as PlayerIndex;
+		draft.currentPlayer = nextDrawPlayer as PlayerIndex;
 		draft.phase = 'draw';
 
-        if (!isSelfDraw) {
-            const winner = draft.players[who];
-            if (winner) winner.hand.push(tileId);
-        }
+		if (!isSelfDraw) {
+			const winner = draft.players[who];
+			if (winner) winner.hand.push(tileId);
+		}
 	});
 	return ok(next);
 }

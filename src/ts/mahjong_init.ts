@@ -1,14 +1,12 @@
 import _ from 'lodash';
-import type { GameState, PlayerState, PlayerIndex } from './types';
+import type { GameState, PlayerState, PlayerIndex, Suit } from './types';
 
-const SUITS = ['w', 't', 'b'] as const;
+const SUITS: Suit[] = ['w', 't', 'b'];
 const RANKS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
 /** Init */
 export function createDeck(): string[] {
-	return _.flatMap([...SUITS], (s: string) =>
-		_.flatMap([...RANKS], (r: number) => _.map(_.times(4), () => `${s}${r}`))
-	);
+	return _.flatMap([...SUITS], (s: string) => _.flatMap([...RANKS], (r: number) => _.map(_.times(4), () => `${s}${r}`)));
 }
 
 /** 洗牌 */
@@ -23,6 +21,7 @@ export function createPlayers(): PlayerState[] {
 		hand: [],
 		melds: [],
 		discarded: [],
+		queSuit: null,
 	}));
 }
 
@@ -61,6 +60,7 @@ export function initGame(dealer: PlayerIndex = 0, seed?: number): GameState {
 
 	_.times(4, (i: number) => {
 		players[i]!.hand = hands[i]!;
+		players[i]!.queSuit = SUITS[seed !== undefined ? (Math.abs(seed) + i) % 3 : (i % 3)] as Suit;
 	});
 
 	return {
