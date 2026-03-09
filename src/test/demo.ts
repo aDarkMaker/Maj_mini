@@ -13,7 +13,7 @@ const BASE_MONEY = 1;
 
 /** 创建空玩家（无手牌、无副露） */
 function emptyPlayer(index: PlayerIndex): PlayerState {
-	return { index, hand: [], melds: [], discarded: [] };
+	return { index, hand: [], melds: [], discarded: [], queSuit: null };
 }
 
 /**
