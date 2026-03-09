@@ -6,9 +6,12 @@
 	"scripts": {
 		"dev": "bun --hot src/index.tsx",
 		"build": "bun build ./src/index.html --outdir=dist --sourcemap --target=browser --minify --define:process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*'",
-		"start": "NODE_ENV=production bun src/index.tsx"
+		"start": "NODE_ENV=production bun src/index.tsx",
+		"game": "bun run src/server.ts",
+		"demo": "bun run src/test/demo.ts"
 	},
 	"dependencies": {
+		"@types/lodash": "^4.17.24",
 		"cspell": "^9.7.0",
 		"immer": "^11.1.4",
 		"lodash": "^4.17.23",
