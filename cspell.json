@@ -1,4 +1,19 @@
 {
-	"words": ["gameover", "liuju", "mult", "Qing", "ZIMO"],
-	"ignorePaths": [".gitignore", "*.lock", "*.json", "*.md"]
+	"words": [
+		"gameover",
+		"liuju",
+		"mult",
+		"numpy",
+		"Qing",
+		"rollouts",
+		"tileid",
+		"venv",
+		"ZIMO"
+	],
+	"ignorePaths": [
+		".gitignore",
+		"*.lock",
+		"*.json",
+		"*.md"
+	]
 }
