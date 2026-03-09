@@ -22,7 +22,7 @@ function emptyPlayer(index: PlayerIndex): PlayerState {
  */
 function buildPointPaoState(): GameState {
 	const hand0: string[] = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8', 'w9', 't9', 't9', 't2', 't3'];
-	const hand1: string[] = ['w1', 'w1', 'w2', 'w3', 't1', 't4', 't5', 't6', 'b1', 'b2', 'b3', 'b4', 'b5'];
+	const hand1: string[] = ['w1', 'w4', 'w2', 'w3', 't1', 't4', 't5', 't6', 'b1', 'b2', 'b3', 'b4', 'b5'];
 	const hand2: string[] = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8', 'w9', 't1', 't2', 't3', 't4'];
 	const hand3: string[] = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8', 'w9', 't5', 't6', 't7', 't8'];
 
@@ -48,7 +48,7 @@ function buildPointPaoState(): GameState {
  */
 function buildSelfDrawState(): GameState {
 	const hand0: string[] = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8', 'w9', 't9', 't9', 't1', 't2', 't3'];
-	const hand1: string[] = ['w1', 'w1', 'w2', 'w3', 't4', 't5', 't6', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6'];
+	const hand1: string[] = ['w1', 'w4', 'w2', 'w3', 't4', 't5', 't6', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6'];
 	const hand2: string[] = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8', 'w9', 't1', 't2', 't3', 't4'];
 	const hand3: string[] = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8', 'w9', 't5', 't6', 't7', 't8'];
 
@@ -61,7 +61,7 @@ function buildSelfDrawState(): GameState {
 
 	return {
 		players,
-		wall: ['w1'],
+		wall: ['w2'],
 		currentPlayer: 0,
 		lastDiscarded: null,
 		lastDiscardFrom: null,
