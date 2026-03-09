@@ -2,8 +2,9 @@ import _ from 'lodash';
 import type { GameState, PlayerIndex } from './ts/types';
 import { initGame } from './ts/mahjong_init';
 import { draw, discard, win } from './ts/players';
-import { canWin } from './ts/rule';
+import { canWin, getValidDiscards } from './ts/rule';
 import { isRoundOver, settleRound, type RoundSummary } from './ts/gameover';
+import { botDiscard } from './ai/bot';
 
 const BASE_MONEY = 1;
 
@@ -27,8 +28,9 @@ function passToNext(state: GameState, summary: RoundSummary): GameState {
 	};
 }
 
-function runOneGame(seed?: number) {
+async function runOneGame(seed?: number) {
 	let state = initGame(0, seed);
+	console.log('定缺:', state.players.map((p, i) => `玩家${i}:${p.queSuit ?? '-'}`).join(' '));
 	const summary: RoundSummary = { winners: [], winHistory: [] };
 	const winnerSet = () => new Set(summary.winners);
 
@@ -49,13 +51,15 @@ function runOneGame(seed?: number) {
 			state = res.value;
 			const p = state.players[who];
 			if (!p) continue;
+			console.log(`玩家 ${who} 摸牌后手牌: ${p.hand.join(' ')}`);
 			for (const t of p.hand) {
-				if (canWin(p.hand, p.melds, t, true)) {
+				if (canWin(p.hand, p.melds, t, true, p.queSuit)) {
 					const winRes = win(state, who, t, true);
 					if (!winRes.ok) continue;
 					state = winRes.value;
 					if (!summary.winners.includes(who)) summary.winners.push(who);
 					summary.winHistory.push({ who, isSelfDraw: true });
+					console.log(`玩家 ${who} 自摸胡`);
 					break;
 				}
 			}
@@ -66,10 +70,14 @@ function runOneGame(seed?: number) {
 			const who = state.currentPlayer;
 			const hand = state.players[who]?.hand ?? [];
 			if (hand.length === 0) break;
-			const tileId = hand[0]!;
+			console.log(`玩家 ${who} 打牌前手牌: ${hand.join(' ')}`);
+			const validDiscards = getValidDiscards(hand, state.players[who]?.queSuit ?? null);
+			const tileId = await botDiscard(state, who, validDiscards);
 			const res = discard(state, tileId, who);
 			if (!res.ok) throw new Error(res.error);
 			state = res.value;
+			const newHand = state.players[who]?.hand ?? [];
+			console.log(`玩家 ${who} 打牌: ${tileId}，打后手牌: ${newHand.join(' ')}`);
 			const lastTile = state.lastDiscarded!;
 			const fromWho = state.lastDiscardFrom ?? who;
 			let someoneWon = false;
@@ -78,12 +86,13 @@ function runOneGame(seed?: number) {
 				if (i_ === fromWho || winnerSet().has(i_)) continue;
 				const pl = state.players[i_];
 				if (!pl) continue;
-				if (canWin([...pl.hand, lastTile], pl.melds, lastTile, false)) {
+				if (canWin([...pl.hand, lastTile], pl.melds, lastTile, false, pl.queSuit)) {
 					const winRes = win(state, i_, lastTile, false);
 					if (!winRes.ok) continue;
 					state = winRes.value;
 					if (!summary.winners.includes(i_)) summary.winners.push(i_);
 					summary.winHistory.push({ who: i_, isSelfDraw: false, fromWho });
+					console.log(`玩家 ${i_} 点炮胡 (点炮者: ${fromWho})`);
 					someoneWon = true;
 					break;
 				}
@@ -104,4 +113,6 @@ function runOneGame(seed?: number) {
 	return { state, summary, net, reason };
 }
 
-runOneGame(42);
+runOneGame()
+	.then(() => console.log('Done'))
+	.catch((e) => console.error(e));
