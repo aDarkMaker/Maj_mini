@@ -33,7 +33,7 @@ export interface GameState {
 	wall: TileId[];
 	currentPlayer: PlayerIndex;
 	lastDiscarded: TileId | null;
-    lastDiscardFrom: PlayerIndex | null;
+	lastDiscardFrom: PlayerIndex | null;
 	phase: 'draw' | 'discard' | 'respond';
 }
 
