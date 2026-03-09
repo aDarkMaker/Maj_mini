@@ -1,4 +1,4 @@
 {
 	"words": [],
-	"ignorePaths": [".gitignore", "*.lock", "*.json"]
+	"ignorePaths": [".gitignore", "*.lock", "*.json", "*.md"]
 }

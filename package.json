@@ -10,6 +10,8 @@
 	},
 	"dependencies": {
 		"cspell": "^9.7.0",
+		"immer": "^11.1.4",
+		"lodash": "^4.17.23",
 		"prettier": "^3.8.1",
 		"react": "^19",
 		"react-dom": "^19"
