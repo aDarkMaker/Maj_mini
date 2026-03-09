@@ -15,3 +15,24 @@ declare module '*.module.css' {
 	const classes: { readonly [key: string]: string };
 	export = classes;
 }
+
+declare module 'lodash' {
+	const _: {
+		flatMap: <T, U>(collection: T[] | Record<string, T>, iteratee: (item: T) => U[] | U) => U[];
+		times: <T>(n: number, iteratee?: (i: number) => T) => T[] | number[];
+		shuffle: <T>(collection: T[] | null | undefined) => T[];
+		sum: (collection: number[] | Record<string, number> | null | undefined) => number;
+		sumBy: <T>(collection: T[] | null | undefined, iteratee: ((item: T) => number) | string) => number;
+		compact: <T>(array: (T | null | undefined | false | '' | 0)[]) => T[];
+		map: <T, U>(collection: T[] | null | undefined, iteratee: (item: T, index: number) => U) => U[];
+		keys: (object: object) => string[];
+		head: <T>(array: T[] | null | undefined) => T | undefined;
+		tail: <T>(array: T[] | null | undefined) => T[];
+		filter: <T>(collection: T[] | null | undefined, predicate: (item: T) => boolean) => T[];
+		range: (start: number, end?: number, step?: number) => number[];
+		some: <T>(collection: T[] | null | undefined, predicate: (item: T) => boolean) => boolean;
+		find: <T>(array: T[] | null | undefined, predicate: (item: T) => boolean) => T | undefined;
+		get: <T>(object: object, path: string | string[], defaultValue?: T) => T;
+	};
+	export = _;
+}
