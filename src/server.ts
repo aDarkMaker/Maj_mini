@@ -5,6 +5,7 @@ import { draw, discard, win } from './ts/players';
 import { canWin, getValidDiscards } from './ts/rule';
 import { isRoundOver, settleRound, type RoundSummary } from './ts/gameover';
 import { botDiscard } from './ai/bot';
+import { printTable } from './ai/display';
 
 const BASE_MONEY = 1;
 
@@ -28,11 +29,36 @@ function passToNext(state: GameState, summary: RoundSummary): GameState {
 	};
 }
 
+/** 格式化输出 */
+const suitName: Record<string, string> = { w: '万', t: '条', b: '筒' };
+function fmtTile(tileId: string): string {
+	if (tileId.length < 2) return tileId;
+	const s = tileId[0]!;
+	const r = tileId.slice(1);
+	return `${r}${suitName[s] ?? s}`;
+}
+function printScoreboard(net: number[], winners: PlayerIndex[]) {
+	console.log('\n========== 结算 ==========');
+	console.log('玩家 |  结果  | 积分');
+	console.log('-----|--------|-----');
+	for (let i = 0; i < 4; i++) {
+		const w = net[i] ?? 0;
+		const isWin = winners.includes(i as PlayerIndex);
+		const tag = isWin ? '胡牌' : w > 0 ? '赢' : w < 0 ? '输' : '-';
+		const sign = w > 0 ? '+' : '';
+		console.log(`  ${i}  |  ${tag.padEnd(4)} | ${sign}${w}`);
+	}
+	console.log('==========================\n');
+}
+
 async function runOneGame(seed?: number) {
 	let state = initGame(0, seed);
-	console.log('定缺:', state.players.map((p, i) => `玩家${i}:${p.queSuit ?? '-'}`).join(' '));
 	const summary: RoundSummary = { winners: [], winHistory: [] };
 	const winnerSet = () => new Set(summary.winners);
+
+	console.log('== 开局定缺 ==');
+	console.log(state.players.map((p, i) => `玩家${i}:${suitName[p.queSuit ?? ''] ?? p.queSuit}`).join('  '));
+	console.log('');
 
 	while (!isRoundOver(state, summary)) {
 		if (state.phase === 'draw') {
@@ -51,7 +77,6 @@ async function runOneGame(seed?: number) {
 			state = res.value;
 			const p = state.players[who];
 			if (!p) continue;
-			console.log(`玩家 ${who} 摸牌后手牌: ${p.hand.join(' ')}`);
 			for (const t of p.hand) {
 				if (canWin(p.hand, p.melds, t, true, p.queSuit)) {
 					const winRes = win(state, who, t, true);
@@ -59,7 +84,7 @@ async function runOneGame(seed?: number) {
 					state = winRes.value;
 					if (!summary.winners.includes(who)) summary.winners.push(who);
 					summary.winHistory.push({ who, isSelfDraw: true });
-					console.log(`玩家 ${who} 自摸胡`);
+					console.log(`>>> 玩家${who} 自摸胡！(${fmtTile(t)})`);
 					break;
 				}
 			}
@@ -70,14 +95,12 @@ async function runOneGame(seed?: number) {
 			const who = state.currentPlayer;
 			const hand = state.players[who]?.hand ?? [];
 			if (hand.length === 0) break;
-			console.log(`玩家 ${who} 打牌前手牌: ${hand.join(' ')}`);
 			const validDiscards = getValidDiscards(hand, state.players[who]?.queSuit ?? null);
 			const tileId = await botDiscard(state, who, validDiscards);
 			const res = discard(state, tileId, who);
 			if (!res.ok) throw new Error(res.error);
 			state = res.value;
-			const newHand = state.players[who]?.hand ?? [];
-			console.log(`玩家 ${who} 打牌: ${tileId}，打后手牌: ${newHand.join(' ')}`);
+			console.log(`玩家${who} → ${fmtTile(tileId)}`);
 			const lastTile = state.lastDiscarded!;
 			const fromWho = state.lastDiscardFrom ?? who;
 			let someoneWon = false;
@@ -92,7 +115,7 @@ async function runOneGame(seed?: number) {
 					state = winRes.value;
 					if (!summary.winners.includes(i_)) summary.winners.push(i_);
 					summary.winHistory.push({ who: i_, isSelfDraw: false, fromWho });
-					console.log(`玩家 ${i_} 点炮胡 (点炮者: ${fromWho})`);
+					console.log(`>>> 玩家${i_} 点炮胡！(${fmtTile(lastTile)}) ← 玩家${fromWho}`);
 					someoneWon = true;
 					break;
 				}
@@ -107,9 +130,10 @@ async function runOneGame(seed?: number) {
 	}
 
 	const { net, reason } = settleRound(state, summary, BASE_MONEY);
-	console.log('Round over.', reason === 'liuju' ? '流局' : '三家胡');
-	console.log('Winners:', summary.winners);
-	console.log('Net:', net);
+	console.log(reason === 'liuju' ? '\n【流局】' : '\n【三家胡】');
+	printScoreboard(net, summary.winners);
+	console.log('\n【最终桌面】');
+	printTable(state, summary.winners);
 	return { state, summary, net, reason };
 }
 
