@@ -55,21 +55,31 @@ export function settleRound(
 	const winnerSet = new Set(summary.winners);
 
 	// 胡牌结算
+	const winnersBefore = new Set<PlayerIndex>();
 	for (const w of summary.winHistory) {
 		const p = state.players[w.who];
 		if (!p) continue;
 		const mult = getWinMultiplierFromOthers(p.hand, p.melds, w.isSelfDraw);
 		const amount = mult * baseMoney;
 		if (w.isSelfDraw) {
+			// 自摸：从所有当前未胡的玩家收钱
+			let payers = 0;
 			for (let i = 0; i < 4; i++) {
-				if (i === w.who) net[i]! += amount * 3;
-				else net[i]! -= amount;
+				if (i !== w.who && !winnersBefore.has(i as PlayerIndex)) payers++;
+			}
+			net[w.who]! += amount * payers;
+			for (let i = 0; i < 4; i++) {
+				if (i !== w.who && !winnersBefore.has(i as PlayerIndex)) net[i]! -= amount;
 			}
 		} else {
+			// 点炮：只有点炮者未胡牌时才付钱
 			const from = w.fromWho ?? 0;
-			net[w.who]! += amount;
-			net[from]! -= amount;
+			if (!winnersBefore.has(from)) {
+				net[w.who]! += amount;
+				net[from]! -= amount;
+			}
 		}
+		winnersBefore.add(w.who);
 	}
 
 	// 流局
