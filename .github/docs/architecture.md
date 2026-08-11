@@ -5,27 +5,30 @@
 ```mermaid
 flowchart LR
     subgraph TS["TypeScript Engine (src/)"]
-        ERR[types.ts — GameState / actions]
-        RULE["rule.ts — win / que-men"]
-        PLAY["players.ts — draw/discard/pong/kong/win"]
-        SCORE["score.ts — fan & multiplier"]
-        OVER["gameover.ts — settlement / 流局"]
-        INIT["mahjong_init.ts — deck / deal"]
-        SERVE["server.ts — terminal game loop"]
+        RULE["rule.ts"]
+        PLAY["players.ts"]
+        SCORE["score.ts"]
+        OVER["gameover.ts"]
+        INIT["mahjong_init.ts"]
+        SERVE["server.ts"]
     end
 
     subgraph PY["Python agent (agent/)"]
-        GEN["dataset_gen.ts → dataset.jsonl"]
-        TRAIN["train.py + model.py (Q-Net)"]
-        PRED["predict.py (inference)"]
-        BOT["bot.ts spawns predict.py"]
+        GEN["dataset_gen.ts"]
+        TRAIN["train.py + model.py"]
+        PRED["predict.py"]
+        BOT["bot.ts"]
     end
 
-    TRAIN --> MODEL["discard_q.pt"]
-    MODEL --> BOT
-    BOT --> ENGAG
-    ENGAG --> RULE & PLAY & SCORE & OVER & INIT
-    GEN --> TRAIN
+    MODEL["discard_q.pt"]
+    GEN --> TRAIN --> MODEL --> BOT
+    BOT --> PRED
+    BOT --> RULE
+    BOT --> PLAY
+    BOT --> SCORE
+    BOT --> OVER
+    BOT --> INIT
+    SERVE --> BOT
 ```
 
 ## Engine data flow
