@@ -1,5 +1,14 @@
-.venv/*
+# Python
+__pycache__/
+*.pyc
+.venv/
 
-model/*
+# 训练产物（可重新生成，不入库）
+*.pt
+*.pth
 
-__pycache__/*
+# 生成的数据集（体积大，按需生成）
+dataset.jsonl
+
+# 模型权重存放目录
+model/

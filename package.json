@@ -9,7 +9,10 @@
 		"start": "NODE_ENV=production bun src/index.tsx",
 		"game": "bun run src/server.ts",
 		"demo": "bun run src/test/demo.ts",
-		"train:data": "bun run src/ai/run_dataset_gen.ts"
+		"train:data": "bun run src/ai/run_dataset_gen.ts",
+		"train:data:repro": "bun run src/ai/run_dataset_gen.ts 100 10 42",
+		"test": "bun test src/test/",
+		"typecheck": "bunx tsc --noEmit"
 	},
 	"dependencies": {
 		"@types/lodash": "^4.17.24",
@@ -21,8 +24,9 @@
 		"react-dom": "^19"
 	},
 	"devDependencies": {
+		"@types/bun": "latest",
+		"@types/node": "^26.2.0",
 		"@types/react": "^19",
-		"@types/react-dom": "^19",
-		"@types/bun": "latest"
+		"@types/react-dom": "^19"
 	}
 }

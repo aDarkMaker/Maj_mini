@@ -2,9 +2,7 @@ import json
 import sys
 from pathlib import Path
 import torch  # pyright: ignore[reportMissingImports]
-from model import DiscardQ
-
-NUM_TILES = 27
+from model import DiscardQ, NUM_TILES, NUM_FEATURES
 
 def main():
     model_path = Path(__file__).parent / "discard_q.pt"
@@ -17,8 +15,8 @@ def main():
         return
     row = json.loads(line)
     hand = row.get("hand", [])
-    if len(hand) != NUM_TILES:
-        hand = hand + [0.0] * (NUM_TILES - len(hand))
+    if len(hand) < NUM_FEATURES:
+        hand = hand + [0.0] * (NUM_FEATURES - len(hand))
     x = torch.tensor([hand], dtype=torch.float32)
     valid_mask = row.get("valid_mask")
     if valid_mask is not None and len(valid_mask) == NUM_TILES:
