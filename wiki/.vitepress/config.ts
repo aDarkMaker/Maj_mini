@@ -5,8 +5,11 @@ export default defineConfig({
 	description: '四川麻将（定缺 / 血战到底）playground 与 AI 训练框架',
 	lang: 'zh-CN',
 	lastUpdated: true,
-	cleanUrls: true,
-	head: [['link', { rel: 'icon', href: '/logo.png' }]],
+	// GitHub Pages serves at https://adarkmaker.github.io/Maj_mini/
+	base: '/Maj_mini/',
+	// GitHub Pages lacks server rewrite for clean URLs; keep .html to avoid 404.
+	cleanUrls: false,
+	head: [['link', { rel: 'icon', href: '/Maj_mini/logo.png' }]],
 	locales: {
 		root: {
 			label: '简体中文',
