@@ -1,0 +1,31 @@
+name: Feature request
+description: Propose a new rule, engine feature, or AI improvement.
+title: "[Feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What problem does this solve, and for which player/AI concept?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe the desired behaviour in detail.
+    validations:
+      required: true
+  - type: input
+    id: impact
+    attributes:
+      label: Affected area
+      description: e.g. rule.ts win scoring, rollout data-gen, model architecture.
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Acceptance criteria
+      options:
+        - label: Tests updated/added
+        - label: docs updated
