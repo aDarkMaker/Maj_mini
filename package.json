@@ -12,7 +12,10 @@
 		"train:data": "bun run src/ai/run_dataset_gen.ts",
 		"train:data:repro": "bun run src/ai/run_dataset_gen.ts 100 10 42",
 		"test": "bun test src/test/",
-		"typecheck": "bunx tsc --noEmit"
+		"typecheck": "bunx tsc --noEmit",
+		"docs:dev": "vitepress dev wiki",
+		"docs:build": "vitepress build wiki",
+		"docs:preview": "vitepress preview wiki"
 	},
 	"dependencies": {
 		"@types/lodash": "^4.17.24",
@@ -24,9 +27,11 @@
 		"react-dom": "^19"
 	},
 	"devDependencies": {
+		"@mermaid-js/mermaid-cli": "^11.16.0",
 		"@types/bun": "latest",
 		"@types/node": "^26.2.0",
 		"@types/react": "^19",
-		"@types/react-dom": "^19"
+		"@types/react-dom": "^19",
+		"vitepress": "^1.6.4"
 	}
 }
