@@ -1,3 +1,4 @@
+// Game entry: plays one terminal-visualized round with bot AI, then settles and prints the scoreboard.
 import _ from 'lodash';
 import type { GameState, PlayerIndex } from './ts/types';
 import { initGame } from './ts/mahjong_init';
@@ -9,13 +10,11 @@ import { printTable } from './ai/display';
 
 const BASE_MONEY = 1;
 
-/** 下一个未胡的玩家 */
 function nextActivePlayer(from: PlayerIndex, winners: Set<PlayerIndex>): PlayerIndex | null {
 	const i = _.find(_.range(1, 5), (k: number) => !winners.has(((from + k) % 4) as PlayerIndex));
 	return i === undefined ? null : (((from + i) % 4) as PlayerIndex);
 }
 
-/** 轮到下家摸牌 */
 function passToNext(state: GameState, summary: RoundSummary): GameState {
 	const from = state.lastDiscardFrom ?? state.currentPlayer;
 	const next = nextActivePlayer(from, new Set(summary.winners));
@@ -29,7 +28,6 @@ function passToNext(state: GameState, summary: RoundSummary): GameState {
 	};
 }
 
-/** 格式化输出 */
 const suitName: Record<string, string> = { w: '万', t: '条', b: '筒' };
 function fmtTile(tileId: string): string {
 	if (tileId.length < 2) return tileId;

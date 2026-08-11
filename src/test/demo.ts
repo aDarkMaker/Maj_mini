@@ -1,8 +1,4 @@
-/**
- * 固定牌局 demo：构造「有输赢」的一局，用于测试 init / rule / score / gameover 全流程
- * 运行: bun run src/test/demo.ts
- */
-
+// Fixed-hand demos covering the point-pao (discard-win) and self-draw settlement flows.
 import type { GameState, PlayerIndex, PlayerState } from '../ts/types';
 import { win } from '../ts/players';
 import { canWin } from '../ts/rule';
@@ -11,15 +7,11 @@ import { getWinMultiplierFromOthers } from '../ts/score';
 
 const BASE_MONEY = 1;
 
-/** 创建空玩家（无手牌、无副露） */
 function emptyPlayer(index: PlayerIndex): PlayerState {
 	return { index, hand: [], melds: [], discarded: [], queSuit: null };
 }
 
-/**
- * 固定牌局：玩家 0 听 1 条（t1），缺门为筒（只有万、条）
- * 手牌 13 张 = 123 345 678 万 + 99 条 + 23 条，胡 t1 成 123 345 678 万 99 条 123 条
- */
+// Player 0 awaits t1 to win (missing suit is barrels; only wans and tiaos held).
 function buildPointPaoState(): GameState {
 	const hand0: string[] = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8', 'w9', 't9', 't9', 't2', 't3'];
 	const hand1: string[] = ['w1', 'w4', 'w2', 'w3', 't1', 't4', 't5', 't6', 'b1', 'b2', 'b3', 'b4', 'b5'];
@@ -35,7 +27,7 @@ function buildPointPaoState(): GameState {
 
 	return {
 		players,
-		wall: [],
+		wall: ['w1', 'w2', 'w3', 'w4'],
 		currentPlayer: 0,
 		lastDiscarded: 't1',
 		lastDiscardFrom: 1,
@@ -43,9 +35,7 @@ function buildPointPaoState(): GameState {
 	};
 }
 
-/**
- * 固定牌局：玩家 0 自摸 t1（手牌已含 t1，共 14 张）
- */
+// Player 0 self-draws t1 (hand already holds t1, 14 tiles total).
 function buildSelfDrawState(): GameState {
 	const hand0: string[] = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6', 'w7', 'w8', 'w9', 't9', 't9', 't1', 't2', 't3'];
 	const hand1: string[] = ['w1', 'w4', 'w2', 'w3', 't4', 't5', 't6', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6'];

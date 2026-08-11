@@ -1,5 +1,6 @@
+// Monte-Carlo rollout: simulates games to estimate the expected score of a first discard.
 import type { GameState, PlayerIndex, Suit } from '@/ts/types';
-import { createDeck } from '@/ts/mahjong_init';
+import { createDeck, shuffleWithSeed } from '@/ts/mahjong_init';
 import { draw, discard, win } from '@/ts/players';
 import { canWin, getValidDiscards } from '@/ts/rule';
 import { isRoundOver, settleRound, type RoundSummary } from '@/ts/gameover';
@@ -7,38 +8,6 @@ import { isRoundOver, settleRound, type RoundSummary } from '@/ts/gameover';
 const SUITS: Suit[] = ['w', 't', 'b'];
 
 const BASE_MONEY = 1;
-
-function takeOne(wall: string[]): [string | null, string[]] {
-	if (wall.length === 0) return [null, []];
-	return [wall[0]!, wall.slice(1)];
-}
-
-function removeFromHand(hand: string[], tileId: string, n: number): string[] {
-	let count = 0;
-	return hand.filter((id) => {
-		if (id! === tileId && count < n) {
-			count++;
-			return false;
-		}
-		return true;
-	});
-}
-
-function shuffleWithSeed(arr: string[], seed: number): string[] {
-	const out = [...arr];
-	let s = seed;
-	for (let i = out.length - 1; i > 0; i--) {
-		s = (s * 1103515245 + 12345) & 0x7fff_ffff;
-		const j = s % (i + 1);
-		const a = out[i]!;
-		const b = out[j]!;
-		if (a !== undefined && b !== undefined) {
-			out[i] = b;
-			out[j] = a;
-		}
-	}
-	return out;
-}
 
 function nextActivePlayer(from: PlayerIndex, winners: Set<PlayerIndex>): PlayerIndex | null {
 	for (let k = 1; k <= 4; k++) {
@@ -61,7 +30,6 @@ function passToNext(state: GameState, summary: RoundSummary): GameState {
 	};
 }
 
-/** 过牌 */
 function subtractDeck(deck: string[], hand: string[]): string[] {
 	const counts = new Map<string, number>();
 	for (const id of deck) counts.set(id, (counts.get(id) ?? 0) + 1);
@@ -80,7 +48,6 @@ function subtractDeck(deck: string[], hand: string[]): string[] {
 	return out;
 }
 
-/** 发牌 */
 function dealRest(rest: string[], dealer: PlayerIndex): { hands: string[][]; wall: string[] } {
 	const hands: string[][] = [[], [], [], []];
 	let offset = 0;
@@ -99,9 +66,7 @@ function dealRest(rest: string[], dealer: PlayerIndex): { hands: string[][]; wal
 	return { hands, wall: rest.slice(offset) };
 }
 
-/**
- * 构造一局，player0QueSuit 与 dataset 一致时首打才合法
- */
+// Builds a round fixed to a given hand-14 and first discard.
 export function buildStateWithFirstDiscard(
 	hand14: string[],
 	firstDiscard: string,
@@ -133,13 +98,13 @@ export function buildStateWithFirstDiscard(
 	return res.value;
 }
 
-/** 定缺下随便打一张（有缺门时只打缺门） */
+// Random discard respecting que-men: only plays the missing suit while present.
 function randomDiscard(hand: string[], queSuit: Suit | null, rng: () => number): string {
 	const valid = getValidDiscards(hand, queSuit);
 	return valid[Math.floor(rng() * valid.length)]!;
 }
 
-/** 搜打撤退 */
+// Plays a full round to completion from a given state.
 export function runGameToEnd(state: GameState, seed: number): { net: number[]; summary: RoundSummary } {
 	const summary: RoundSummary = { winners: [], winHistory: [] };
 	const winnerSet = () => new Set(summary.winners);
@@ -219,9 +184,7 @@ export function runGameToEnd(state: GameState, seed: number): { net: number[]; s
 	return { net, summary };
 }
 
-/**
- * 穷举首打，player0QueSuit 与 dataset_gen 中该手牌定缺一致
- */
+// Estimates expected net score for a fixed first discard over the opponent's random play.
 export function runRollout(
 	hand14: string[],
 	firstDiscard: string,

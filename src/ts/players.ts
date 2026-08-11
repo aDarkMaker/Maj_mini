@@ -1,3 +1,9 @@
+/**
+ * Player actions: draw, discard, pong, kong, and win. All actions are pure —
+ * they return a new `GameState` via immer and never mutate the input.
+ * The `phase` field advances as a small state machine:
+ *   draw -> discard -> respond -> (next draw) ...
+ */
 import _ from 'lodash';
 import { produce, type Draft } from 'immer';
 import type { GameState, PlayerIndex, Meld } from './types';
@@ -5,12 +11,13 @@ import type { KongType } from './types';
 import { ok, err, type Result } from './types';
 import { canWin } from './rule';
 
+/** Take the top tile off the wall; returns [tile, rest], or [null, []] when empty. */
 function takeOne(wall: string[]): [string | null, string[]] {
 	if (wall.length === 0) return [null, []];
 	return [_.head(wall) ?? null, _.tail(wall)];
 }
 
-/** 移牌 */
+/** Remove at most `n` copies of `tileId` from `hand` (immutable). */
 function removeFromHand(hand: string[], tileId: string, n: number): string[] {
 	let count = 0;
 	return _.filter(hand, (id: string) => {
@@ -22,7 +29,7 @@ function removeFromHand(hand: string[], tileId: string, n: number): string[] {
 	});
 }
 
-/** 摸牌 */
+/** Draw one tile from the wall for the current player; moves phase draw -> discard. */
 export function draw(state: GameState, playerIndex?: PlayerIndex): Result<GameState, string> {
 	const who = playerIndex ?? state.currentPlayer;
 	if (state.phase !== 'draw') return err('Not in draw phase');
@@ -40,7 +47,7 @@ export function draw(state: GameState, playerIndex?: PlayerIndex): Result<GameSt
 	return ok(next);
 }
 
-/** 打牌 */
+/** Discard a tile from hand; moves phase discard -> respond so others may act. */
 export function discard(state: GameState, tileId: string, playerIndex?: PlayerIndex): Result<GameState, string> {
 	if (state.phase !== 'discard') return err('Not in discard phase');
 	if (state.currentPlayer !== playerIndex) return err('Not your turn');
@@ -61,7 +68,7 @@ export function discard(state: GameState, tileId: string, playerIndex?: PlayerIn
 	return ok(next);
 }
 
-/** 碰 */
+/** Pong (碰): two matching hand tiles + the just-discarded tile form an exposed triplet. */
 export function pong(state: GameState, who: PlayerIndex, fromWho: PlayerIndex, tileId: string): Result<GameState, string> {
 	if (state.phase !== 'respond') return err('Not in respond phase');
 	if (state.currentPlayer !== who) return err('Not your turn');
@@ -84,7 +91,7 @@ export function pong(state: GameState, who: PlayerIndex, fromWho: PlayerIndex, t
 	return ok(next);
 }
 
-/** 杠 + DLC */
+/** Common helper for kong: expose the meld, then draw a replacement tile (杠上开花). */
 function add_Kong_Draw(state: GameState, who: PlayerIndex, meld: Meld, newHand: string[]): Result<GameState, string> {
 	const [newTile, restWall] = takeOne(state.wall);
 	if (!newTile) return err('No tiles left in wall');
@@ -106,6 +113,12 @@ function add_Kong_Draw(state: GameState, who: PlayerIndex, meld: Meld, newHand: 
 	);
 }
 
+/**
+ * Kong (杠) in one of three flavours, each followed by a replacement draw:
+ *  - concealed 暗杠: four identical hand tiles, no tile from the table;
+ *  - exposed   明杠: three hand tiles + one just-discarded by another player;
+ *  - added     加杠: upgrading an existing exposed pong with the fourth matching tile.
+ */
 export function kong(state: GameState, who: PlayerIndex, tileId: string, kind: KongType, fromWho?: PlayerIndex): Result<GameState, string> {
 	const four: string[] = [tileId, tileId, tileId, tileId];
 
@@ -161,7 +174,11 @@ export function kong(state: GameState, who: PlayerIndex, tileId: string, kind: K
 	return err('Invalid kong type');
 }
 
-/** 胡牌 */
+/**
+ * Record a win. Self-draw (自摸) uses the player's just-drawn tile; otherwise the win
+ * is taken on another player's discard (点炮). Validates phase, tile ownership,
+ * and that the resulting hand actually wins under que-men.
+ */
 export function win(state: GameState, who: PlayerIndex, tileId: string, isSelfDraw: boolean): Result<GameState, string> {
 	const player = state.players[who];
 	if (!player) return err('Player not found');

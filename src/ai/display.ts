@@ -1,3 +1,4 @@
+// Terminal visualization of the table and per-player state.
 import type { GameState } from '@/ts/types';
 
 const suitName: Record<string, string> = { w: '万', t: '条', b: '筒' };
@@ -13,23 +14,18 @@ function fmtShortTile(tileId: string): string {
 	if (tileId.length < 2) return tileId;
 	const s = tileId[0]!;
 	const r = tileId.slice(1);
-	const suitChar = suitName[s] ?? s;
-	return `${r}${suitChar}`;
+	return `${r}${suitName[s] ?? s}`;
 }
 
-/** 格式化手牌：排序后显示 */
 function fmtHand(hand: string[]): string {
-	// 按花色分组
 	const groups: Record<string, string[]> = { w: [], t: [], b: [] };
 	for (const t of hand) {
 		const s = t[0];
 		if (s && s in groups) groups[s]!.push(t);
 	}
-	// 每组内排序
 	for (const s of ['w', 't', 'b']) {
 		groups[s]!.sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1)));
 	}
-	// 按万条筒顺序输出
 	const parts: string[] = [];
 	for (const s of ['w', 't', 'b']) {
 		if (groups[s]!.length > 0) {
@@ -39,7 +35,6 @@ function fmtHand(hand: string[]): string {
 	return parts.join(' ');
 }
 
-/** 显示线性牌桌布局（从上到下 0-3） */
 export function printTable(state: GameState, winners: number[]) {
 	const ps = state.players;
 	const isWin = (i: number) => winners.includes(i);
@@ -60,7 +55,6 @@ export function printTable(state: GameState, winners: number[]) {
 	console.log('└─────────────────────────────────────────────────────────────────────');
 }
 
-/** 显示当前桌面状态（简化版，用于实时显示） */
 export function printCompactState(state: GameState, currentPlayer?: number, action?: string) {
 	const ps = state.players;
 	console.log('\n┌────────┬────────┬────────┬────────────────');

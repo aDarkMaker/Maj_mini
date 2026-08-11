@@ -1,9 +1,17 @@
+/**
+ * Round-end detection and settlement.
+ *
+ * A round ends when either:
+ *  - 血战到底: three players have already won (or the wall is exhausted), or
+ *  - the draw pile runs out (流局). On a 流局 the remaining players are scored by
+ *    check-called 查叫 (无叫 pays 有叫) and 花猪 (three-suit hands pay everyone).
+ */
 import _ from 'lodash';
 import type { GameState, PlayerIndex, PlayerState, Meld } from './types';
 import { getTileCounts, getSuitSet, canWin } from './rule';
 import { getWinMultiplierFromOthers } from './score';
 
-/** 本局已胡 */
+/** What happened during this round: who won, and on which tile (self-draw or discard). */
 export type RoundSummary = {
 	winners: PlayerIndex[];
 	winHistory: { who: PlayerIndex; isSelfDraw: boolean; fromWho?: PlayerIndex }[];
@@ -11,21 +19,19 @@ export type RoundSummary = {
 
 const TILE_IDS: string[] = _.flatMap(['w', 't', 'b'], (s: string) => _.map(_.range(1, 10), (r: number) => `${s}${r}`));
 
-/** 是否听牌 */
+/** Check-called 听牌 (is the 13-tile hand one tile away from a win). */
 export function hasTing(hand: string[], melds: Meld[]): boolean {
 	if (hand.length !== 13) return false;
 	return _.some(TILE_IDS, (t: string) => canWin([...hand, t], melds, t, true));
 }
 
-/** 是否花猪 */
+/** 花猪: a hand (incl. melds) containing all three suits, which is always a penalty at 流局. */
 export function isHuaZhu(hand: string[], melds: Meld[]): boolean {
 	const counts = getTileCounts(hand, melds);
 	return getSuitSet(counts).size === 3;
 }
 
-/**
- * 一局是否结束
- */
+/** True when this round has concluded: 3 wins, or wall empty with 2+ players not yet won. */
 export function isRoundOver(state: GameState, summary: RoundSummary): boolean {
 	if (summary.winners.length >= 3) return true;
 	if (state.wall.length > 0) return false;
@@ -36,12 +42,12 @@ export function isRoundOver(state: GameState, summary: RoundSummary): boolean {
 }
 
 /**
- * 结算一局
- * @param state 当前状态
- * @param summary 本局已胡记录
- * @param baseMoney 底金
- * @param fullCap 流局查叫时「大叫」倍数
- * @param huaZhuCap 花猪赔非花猪倍数
+ * Settle each player's net score. Returns the per-player net and whether the round
+ * ended without a full 3-winner 血战 (reason `liuju`). The net is the hero's 0-th entry
+ * then all differences. Arguments:
+ * @param baseMoney per point base value
+ * @param fullCap multiplier a 无叫 player pays a 有叫 player at 流局
+ * @param huaZhuCap multiplier an 花猪 pays each non-花猪
  */
 export function settleRound(
 	state: GameState,
@@ -54,7 +60,6 @@ export function settleRound(
 
 	const winnerSet = new Set(summary.winners);
 
-	// 胡牌结算
 	const winnersBefore = new Set<PlayerIndex>();
 	for (const w of summary.winHistory) {
 		const p = state.players[w.who];
@@ -62,7 +67,6 @@ export function settleRound(
 		const mult = getWinMultiplierFromOthers(p.hand, p.melds, w.isSelfDraw);
 		const amount = mult * baseMoney;
 		if (w.isSelfDraw) {
-			// 自摸：从所有当前未胡的玩家收钱
 			let payers = 0;
 			for (let i = 0; i < 4; i++) {
 				if (i !== w.who && !winnersBefore.has(i as PlayerIndex)) payers++;
@@ -72,7 +76,6 @@ export function settleRound(
 				if (i !== w.who && !winnersBefore.has(i as PlayerIndex)) net[i]! -= amount;
 			}
 		} else {
-			// 点炮：只有点炮者未胡牌时才付钱
 			const from = w.fromWho ?? 0;
 			if (!winnersBefore.has(from)) {
 				net[w.who]! += amount;
@@ -82,7 +85,6 @@ export function settleRound(
 		winnersBefore.add(w.who);
 	}
 
-	// 流局
 	const isLiuju = state.wall.length === 0 && winnerSet.size < 3 && 4 - summary.winners.length >= 2;
 	if (!isLiuju) return { net, reason: 'normal' };
 
@@ -98,7 +100,6 @@ export function settleRound(
 	});
 	const noTingList = notWinners.filter((i) => !huaZhuList.includes(i) && !tingList.includes(i));
 
-	// 花猪赔非花猪
 	const nonHuaZhu = notWinners.filter((i) => !huaZhuList.includes(i));
 	for (const i of huaZhuList) {
 		for (const j of nonHuaZhu) {
@@ -107,7 +108,6 @@ export function settleRound(
 		}
 	}
 
-	// 无叫赔有叫
 	const payAmount = fullCap * baseMoney;
 	for (const i of noTingList) {
 		for (const j of tingList) {
