@@ -1,16 +1,13 @@
 # Maj_Mini
 
-<!-- language-switch -->
-**中文** · [English](#english) · [中文文档](#chinese-中文)
-<!-- /language-switch -->
-
 A playground and AI-training framework for **Sichuan Mahjong** (川麻) with two
 signature rules: 缺门 (que-men / forced missing suit) and 血战到底 (blood battle).
 
 ---
 
-<!-- 中文段 START -->
-## 中文 (Chinese)
+## 中文
+
+一个以**四川麻将**（缺门 / 血战到底）为场景的 playground 与 AI 训练框架。
 
 一个以**四川麻将**（缺门 / 血战到底）为场景的 playground 与 AI 训练框架。
 
@@ -62,9 +59,7 @@ bun run game                    # 使用训练好的模型对战
 
 ---
 
-## English (en)
-
-<!-- English 段 -->
+## English
 
 An AI-training arena for **Sichuan Mahjong**. The engine enforces 缺门 (draw-and-discard
 a forced missing suit) and 血战到底 (play continues until three wins or the wall runs out).

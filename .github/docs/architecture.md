@@ -47,9 +47,9 @@ sequenceDiagram
         R-->>P: boolean
         P-->>S: new GameState
     end
-    S->>OVER: settleRound(state, summary, base)
-    OVER->>Sco: getWinMultiplierFromOthers(...)
-    OVER-->>S: net / reason
+    S->>G: settleRound(state, summary, base)
+    G->>Sco: getWinMultiplierFromOthers(...)
+    G-->>S: net / reason
 ```
 
 ## Training pipeline
