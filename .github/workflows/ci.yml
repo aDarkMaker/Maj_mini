@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install
+      - run: bun run typecheck
+
+  engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.17.0
+      - run: bun run build:engine
+      - run: bun run test:engine
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.17.0
+      - run: bun install
+      - run: bun run build:engine
+      - run: bun run test
+      - run: bun run demo
+
+  train-smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --frozen
+      # Smoke-test the training pipeline on a tiny subset.
+      - run: head -n 20 dataset.jsonl > dataset_smoke.jsonl
+      - run: uv run python model.py
+      - run: uv run python -c "from model import DiscardQ; m=DiscardQ(); print('model ok', sum(p.numel() for p in m.parameters()))"

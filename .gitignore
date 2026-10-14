@@ -38,6 +38,8 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Temp
 temp/
+temp/wiki/.vitepress/dist
+wiki/.vitepress/cache
 
 # Zig build artifacts
 backend/.zig-cache

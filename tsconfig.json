@@ -2,6 +2,7 @@
 	"compilerOptions": {
 		// Environment setup & latest features
 		"lib": ["ESNext", "DOM"],
+		"types": ["node", "bun"],
 		"target": "ESNext",
 		"module": "Preserve",
 		"moduleDetection": "force",
@@ -21,7 +22,6 @@
 		"noUncheckedIndexedAccess": true,
 		"noImplicitOverride": true,
 
-		"baseUrl": ".",
 		"paths": {
 			"@/*": ["./src/*"]
 		},

@@ -1,10 +1,8 @@
 import * as fs from 'fs';
 import type { Suit } from '@/ts/types';
-import { createDeck } from '@/ts/mahjong_init';
-import { getValidDiscards } from '@/ts/rule';
+import { engine } from '@/engine/client';
 import { handToVec } from './features';
-import { tileIdToIndex } from './constants';
-import { runRollout } from './rollout';
+import { tileIdToIndex, TILE_IDS } from './constants';
 
 const SUITS: Suit[] = ['w', 't', 'b'];
 
@@ -19,16 +17,14 @@ function shuffleWithSeed<T>(arr: T[], seed: number): T[] {
 	return out;
 }
 
-/** 生成手牌 */
-function sampleHand14(seed: number): string[] {
-	const deck = createDeck();
-	const shuffled = shuffleWithSeed(deck, seed);
-	return shuffled.slice(0, 14);
+/** Four copies of every tile */
+function createDeck(): string[] {
+	return TILE_IDS.flatMap((id) => [id, id, id, id]);
 }
 
-/** 定缺下可打的牌（每种一张为代表） */
-function possibleDiscards(hand: string[], queSuit: Suit | null): string[] {
-	return getValidDiscards(hand, queSuit);
+/** Sample a random 14 tile hand */
+function sampleHand14(seed: number): string[] {
+	return shuffleWithSeed(createDeck(), seed).slice(0, 14);
 }
 
 export interface DatasetRow {
@@ -37,17 +33,17 @@ export interface DatasetRow {
 	reward: number;
 }
 
-/** 数据集 */
-export function generateDataset(outputPath: string, numHands: number, rolloutsPerAction: number, baseSeed: number): void {
+/** Generate a JSONL dataset from exhaustive first-discard rollouts */
+export async function generateDataset(outputPath: string, numHands: number, rolloutsPerAction: number, baseSeed: number): Promise<void> {
 	const stream = fs.createWriteStream(outputPath, { flags: 'w' });
 	let written = 0;
 	for (let h = 0; h < numHands; h++) {
 		const hand14 = sampleHand14(baseSeed + h * 10000);
 		const queSuit = SUITS[(Math.abs(baseSeed) + h) % 3] as Suit;
-		const vec = handToVec(hand14);
-		const discards = possibleDiscards(hand14, queSuit);
+		const vec = handToVec(hand14, queSuit);
+		const discards = await engine.validDiscards(hand14, queSuit);
 		for (const tileId of discards) {
-			const reward = runRollout(hand14, tileId, rolloutsPerAction, baseSeed + h * 10000 + 1, queSuit);
+			const reward = await engine.simulate(hand14, tileId, rolloutsPerAction, baseSeed + h * 10000 + 1, queSuit);
 			const discard_idx = tileIdToIndex(tileId);
 			if (discard_idx < 0) continue;
 			const row: DatasetRow = { hand: vec, discard_idx, reward };

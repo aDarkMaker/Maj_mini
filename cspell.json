@@ -1,23 +1,4 @@
 {
-	"words": [
-		"gameover",
-		"liuju",
-		"mahjong",
-		"mult",
-		"numpy",
-		"Qing",
-		"rollouts",
-		"tileid",
-		"venv",
-		"ZIMO",
-		"zig"
-	],
-	"ignorePaths": [
-		".gitignore",
-		"*.lock",
-		"*.json",
-		"*.md",
-		"backend/zig-out/**",
-		"backend/.zig-cache/**"
-	]
+	"words": ["gameover", "liuju", "mahjong", "mult", "numpy", "Passthru", "Qing", "rollouts", "tileid", "venv", "ZIMO", "zig"],
+	"ignorePaths": [".gitignore", "*.lock", "*.json", "*.md", "backend/zig-out/**", "backend/.zig-cache/**"]
 }

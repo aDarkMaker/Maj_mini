@@ -1,0 +1,33 @@
+name: Bug report
+description: Report a problem with the game engine or the AI training pipeline.
+title: '[Bug] '
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened and what did you expect?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Engine (src/ts)
+        - AI / data (src/ai, agent/)
+        - Tooling (build, typecheck, tests)
+        - Docs
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Include seed, hand, or commands used to reproduce.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / output
+      render: shell

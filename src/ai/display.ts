@@ -1,3 +1,4 @@
+// Terminal visualization of the table and per-player state.
 import type { GameState } from '@/ts/types';
 
 const suitName: Record<string, string> = { w: '万', t: '条', b: '筒' };
@@ -13,8 +14,7 @@ function fmtShortTile(tileId: string): string {
 	if (tileId.length < 2) return tileId;
 	const s = tileId[0]!;
 	const r = tileId.slice(1);
-	const suitChar = suitName[s] ?? s;
-	return `${r}${suitChar}`;
+	return `${r}${suitName[s] ?? s}`;
 }
 
 /** Format a hand grouped by suit, ranks sorted */

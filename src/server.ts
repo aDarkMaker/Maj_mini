@@ -1,3 +1,4 @@
+// Game entry: plays one terminal-visualized round with bot AI, then settles and prints the scoreboard.
 import _ from 'lodash';
 import type { GameState, PlayerIndex, RoundSummary } from './ts/types';
 import { engine } from './engine/client';

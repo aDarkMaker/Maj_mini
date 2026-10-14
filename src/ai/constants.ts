@@ -1,4 +1,4 @@
-const SUITS = ['w', 't', 'b'] as const;
+export const SUITS = ['w', 't', 'b'] as const;
 const RANKS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
 export const TILE_IDS: string[] = [];
@@ -20,3 +20,6 @@ export function indexToTileId(index: number): string {
 }
 
 export const NUM_TILES = 27;
+// Feature vector = 27 tile counts + 3 one-hot que-suit flags (indices 27/28/29).
+export const NUM_FEATURES = 30;
+export const QUE_SUIT_FEATURE_INDEX: Record<string, number> = { w: 27, t: 28, b: 29 };

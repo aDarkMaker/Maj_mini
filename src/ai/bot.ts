@@ -1,14 +1,25 @@
+// Bot Python inference: resolves the venv interpreter and calls predict.py for a discard choice.
 import { spawn } from 'child_process';
-import { handToVec } from './features';
-import { indexToTileId, tileIdToIndex, NUM_TILES } from './constants';
-import type { GameState, PlayerIndex } from '@/ts/types';
-
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { handToVec } from './features';
+import { indexToTileId, tileIdToIndex, NUM_TILES } from './constants';
+import type { GameState, PlayerIndex, Suit } from '@/ts/types';
 
 const __dirname = typeof globalThis.__dirname !== 'undefined' ? globalThis.__dirname : path.dirname(fileURLToPath(import.meta.url));
-const PYTHON = path.resolve(__dirname, '../../agent/.venv/bin/python');
-const PREDICT_SCRIPT = path.resolve(__dirname, '../../agent/predict.py');
+const AGENT_DIR = path.resolve(__dirname, '../../agent');
+const PREDICT_SCRIPT = path.join(AGENT_DIR, 'predict.py');
+
+function resolvePython(): string {
+	const venv = path.join(AGENT_DIR, '.venv');
+	if (fs.existsSync(venv)) {
+		return process.platform === 'win32' ? path.join(venv, 'Scripts', 'python.exe') : path.join(venv, 'bin', 'python');
+	}
+	return 'uv run python';
+}
+
+const PYTHON = resolvePython();
 
 function buildValidMask(hand: string[], validTileIds: string[]): number[] {
 	const mask = new Array<number>(NUM_TILES).fill(0);
@@ -21,15 +32,14 @@ function buildValidMask(hand: string[], validTileIds: string[]): number[] {
 	return mask;
 }
 
-export function chooseDiscardFromHand(hand: string[], validDiscardTileIds?: string[]): Promise<string> {
-	const vec = handToVec(hand);
-	const valid_mask =
-		validDiscardTileIds && validDiscardTileIds.length > 0
-			? buildValidMask(hand, validDiscardTileIds)
-			: undefined;
+export function chooseDiscardFromHand(hand: string[], validDiscardTileIds?: string[], queSuit?: Suit | null): Promise<string> {
+	const vec = handToVec(hand, queSuit);
+	const valid_mask = validDiscardTileIds && validDiscardTileIds.length > 0 ? buildValidMask(hand, validDiscardTileIds) : undefined;
 	const payload = JSON.stringify(valid_mask ? { hand: vec, valid_mask } : { hand: vec });
 	return new Promise<string>((resolve, reject) => {
-		const proc = spawn(PYTHON, [PREDICT_SCRIPT], { stdio: ['pipe', 'pipe', 'inherit'] });
+		// PYTHON may be "uv run python" (contains a space): split into command + args for spawn.
+		const [cmd, ...pyArgs] = PYTHON.split(/ +/);
+		const proc = spawn(cmd!, [...pyArgs, PREDICT_SCRIPT], { stdio: ['pipe', 'pipe', 'inherit'] });
 		proc.stdin?.write(payload + '\n');
 		proc.stdin?.end();
 		let out = '';
@@ -56,12 +66,8 @@ export function chooseDiscardFromHand(hand: string[], validDiscardTileIds?: stri
 	});
 }
 
-export function botDiscard(
-	state: GameState,
-	who: PlayerIndex,
-	validDiscardTileIds: string[]
-): Promise<string> {
-	const hand = state.players[who]?.hand ?? [];
-	if (hand.length === 0) throw new Error('no hand');
-	return chooseDiscardFromHand(hand, validDiscardTileIds.length > 0 ? validDiscardTileIds : undefined);
+export function botDiscard(state: GameState, who: PlayerIndex, validDiscardTileIds: string[]): Promise<string> {
+	const player = state.players[who];
+	if (!player || player.hand.length === 0) throw new Error('no hand');
+	return chooseDiscardFromHand(player.hand, validDiscardTileIds.length > 0 ? validDiscardTileIds : undefined, player.queSuit);
 }
