@@ -1,35 +1,25 @@
 import _ from 'lodash';
-import type { GameState, PlayerIndex } from './ts/types';
-import { initGame } from './ts/mahjong_init';
-import { draw, discard, win } from './ts/players';
-import { canWin, getValidDiscards } from './ts/rule';
-import { isRoundOver, settleRound, type RoundSummary } from './ts/gameover';
+import type { GameState, PlayerIndex, RoundSummary } from './ts/types';
+import { engine } from './engine/client';
 import { botDiscard } from './ai/bot';
 import { printTable } from './ai/display';
 
 const BASE_MONEY = 1;
 
-/** 下一个未胡的玩家 */
+/** Next player who has not won yet */
 function nextActivePlayer(from: PlayerIndex, winners: Set<PlayerIndex>): PlayerIndex | null {
 	const i = _.find(_.range(1, 5), (k: number) => !winners.has(((from + k) % 4) as PlayerIndex));
 	return i === undefined ? null : (((from + i) % 4) as PlayerIndex);
 }
 
-/** 轮到下家摸牌 */
-function passToNext(state: GameState, summary: RoundSummary): GameState {
+/** Hand the turn to the next player */
+async function passToNext(state: GameState, summary: RoundSummary): Promise<GameState> {
 	const from = state.lastDiscardFrom ?? state.currentPlayer;
 	const next = nextActivePlayer(from, new Set(summary.winners));
 	if (next === null) return state;
-	return {
-		...state,
-		currentPlayer: next,
-		phase: 'draw',
-		lastDiscarded: null,
-		lastDiscardFrom: null,
-	};
+	return engine.passToNext(state, summary.winners);
 }
 
-/** 格式化输出 */
 const suitName: Record<string, string> = { w: '万', t: '条', b: '筒' };
 function fmtTile(tileId: string): string {
 	if (tileId.length < 2) return tileId;
@@ -37,6 +27,7 @@ function fmtTile(tileId: string): string {
 	const r = tileId.slice(1);
 	return `${r}${suitName[s] ?? s}`;
 }
+
 function printScoreboard(net: number[], winners: PlayerIndex[]) {
 	console.log('\n========== 结算 ==========');
 	console.log('玩家 |  结果  | 积分');
@@ -52,7 +43,7 @@ function printScoreboard(net: number[], winners: PlayerIndex[]) {
 }
 
 async function runOneGame(seed?: number) {
-	let state = initGame(0, seed);
+	let state = await engine.init(0, seed);
 	const summary: RoundSummary = { winners: [], winHistory: [] };
 	const winnerSet = () => new Set(summary.winners);
 
@@ -60,7 +51,7 @@ async function runOneGame(seed?: number) {
 	console.log(state.players.map((p, i) => `玩家${i}:${suitName[p.queSuit ?? ''] ?? p.queSuit}`).join('  '));
 	console.log('');
 
-	while (!isRoundOver(state, summary)) {
+	while (!(await engine.isRoundOver(state, summary))) {
 		if (state.phase === 'draw') {
 			const who = state.currentPlayer;
 			if (winnerSet().has(who)) {
@@ -69,19 +60,17 @@ async function runOneGame(seed?: number) {
 				state = { ...state, currentPlayer: next };
 				continue;
 			}
-			const res = draw(state, who);
-			if (!res.ok) {
-				if (res.error.includes('No tiles') || res.error.includes('wall')) break;
-				throw new Error(res.error);
-			}
-			state = res.value;
+			const drawn = await engine.draw(state, who).catch((e: Error) => {
+				if (e.message.includes('InvalidMove')) return null;
+				throw e;
+			});
+			if (!drawn) break;
+			state = drawn;
 			const p = state.players[who];
 			if (!p) continue;
 			for (const t of p.hand) {
-				if (canWin(p.hand, p.melds, t, true, p.queSuit)) {
-					const winRes = win(state, who, t, true);
-					if (!winRes.ok) continue;
-					state = winRes.value;
+				if (await engine.canWin({ hand: p.hand, melds: p.melds, queSuit: p.queSuit })) {
+					state = await engine.win(state, who, t, true);
 					if (!summary.winners.includes(who)) summary.winners.push(who);
 					summary.winHistory.push({ who, isSelfDraw: true });
 					console.log(`>>> 玩家${who} 自摸胡！(${fmtTile(t)})`);
@@ -95,11 +84,9 @@ async function runOneGame(seed?: number) {
 			const who = state.currentPlayer;
 			const hand = state.players[who]?.hand ?? [];
 			if (hand.length === 0) break;
-			const validDiscards = getValidDiscards(hand, state.players[who]?.queSuit ?? null);
+			const validDiscards = await engine.validDiscards(hand, state.players[who]?.queSuit ?? null);
 			const tileId = await botDiscard(state, who, validDiscards);
-			const res = discard(state, tileId, who);
-			if (!res.ok) throw new Error(res.error);
-			state = res.value;
+			state = await engine.discard(state, tileId, who);
 			console.log(`玩家${who} → ${fmtTile(tileId)}`);
 			const lastTile = state.lastDiscarded!;
 			const fromWho = state.lastDiscardFrom ?? who;
@@ -109,10 +96,8 @@ async function runOneGame(seed?: number) {
 				if (i_ === fromWho || winnerSet().has(i_)) continue;
 				const pl = state.players[i_];
 				if (!pl) continue;
-				if (canWin([...pl.hand, lastTile], pl.melds, lastTile, false, pl.queSuit)) {
-					const winRes = win(state, i_, lastTile, false);
-					if (!winRes.ok) continue;
-					state = winRes.value;
+				if (await engine.canWin({ hand: [...pl.hand, lastTile], melds: pl.melds, queSuit: pl.queSuit })) {
+					state = await engine.win(state, i_, lastTile, false);
 					if (!summary.winners.includes(i_)) summary.winners.push(i_);
 					summary.winHistory.push({ who: i_, isSelfDraw: false, fromWho });
 					console.log(`>>> 玩家${i_} 点炮胡！(${fmtTile(lastTile)}) ← 玩家${fromWho}`);
@@ -120,16 +105,16 @@ async function runOneGame(seed?: number) {
 					break;
 				}
 			}
-			if (!someoneWon) state = passToNext(state, summary);
+			if (!someoneWon) state = await passToNext(state, summary);
 			continue;
 		}
 
 		if (state.phase === 'respond') {
-			state = passToNext(state, summary);
+			state = await passToNext(state, summary);
 		}
 	}
 
-	const { net, reason } = settleRound(state, summary, BASE_MONEY);
+	const { net, reason } = await engine.settle(state, summary, BASE_MONEY);
 	console.log(reason === 'liuju' ? '\n【流局】' : '\n【三家胡】');
 	printScoreboard(net, summary.winners);
 	console.log('\n【最终桌面】');
