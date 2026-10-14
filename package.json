@@ -7,6 +7,8 @@
 		"dev": "bun --hot src/index.tsx",
 		"build": "bun build ./src/index.html --outdir=dist --sourcemap --target=browser --minify --define:process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*'",
 		"start": "NODE_ENV=production bun src/index.tsx",
+		"build:engine": "cd backend && zig build -Doptimize=ReleaseFast",
+		"test:engine": "cd backend && zig build test",
 		"game": "bun run src/server.ts",
 		"demo": "bun run src/test/demo.ts",
 		"train:data": "bun run src/ai/run_dataset_gen.ts"

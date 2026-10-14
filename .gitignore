@@ -38,3 +38,8 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Temp
 temp/
+
+# Zig build artifacts
+backend/.zig-cache
+backend/zig-out
+zig-cache

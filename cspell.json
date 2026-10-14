@@ -2,18 +2,22 @@
 	"words": [
 		"gameover",
 		"liuju",
+		"mahjong",
 		"mult",
 		"numpy",
 		"Qing",
 		"rollouts",
 		"tileid",
 		"venv",
-		"ZIMO"
+		"ZIMO",
+		"zig"
 	],
 	"ignorePaths": [
 		".gitignore",
 		"*.lock",
 		"*.json",
-		"*.md"
+		"*.md",
+		"backend/zig-out/**",
+		"backend/.zig-cache/**"
 	]
 }
