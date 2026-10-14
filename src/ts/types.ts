@@ -1,25 +1,25 @@
-// 花色
+// Suit
 export type Suit = 'w' | 't' | 'b';
 
-// 牌面
+// Tile face
 type Tile = { suit: Suit; rank: number };
 
-// 计数器
+// Tile identifier
 type TileId = string;
 
-// 玩家
+// Player seat
 export type PlayerIndex = 0 | 1 | 2 | 3;
 
-// 杠牌类型
+// Kong variant
 export type KongType = 'concealed' | 'exposed' | 'added';
 
-// 玩家状态
+// Player state
 export interface PlayerState {
 	index: PlayerIndex;
 	hand: TileId[];
 	melds: Meld[];
 	discarded: TileId[];
-	/** 定缺：该门必须打光，胡牌时手牌不能含此花色 */
+	/** Missing suit: must be discarded, and no such suit may remain when winning */
 	queSuit: Suit | null;
 }
 
@@ -29,7 +29,7 @@ export interface Meld {
 	kongType?: KongType;
 }
 
-// 游戏状态
+// Game state
 export interface GameState {
 	players: PlayerState[];
 	wall: TileId[];
@@ -46,3 +46,9 @@ export function ok<T>(value: T): Result<T, never> {
 export function err<E>(error: E): Result<never, E> {
 	return { ok: false, error };
 }
+
+// Rounds already won in the current deal
+export type RoundSummary = {
+	winners: PlayerIndex[];
+	winHistory: { who: PlayerIndex; isSelfDraw: boolean; fromWho?: PlayerIndex }[];
+};
